@@ -165,7 +165,9 @@ Cargo 原始构建产物为 `target/release/unblockmcdownload.exe`，发布时�
 
 [GitHub Actions](https://github.com/TianMengLucky/UnblockMCDownload/actions/workflows/build.yml) 会在分支推送、Pull Request 和手动触发时执行格式检查、Clippy、测试及 Windows x64 发布构建。构建成功后，可在对应运行的 Artifacts 中直接下载 `解锁MC下载限制.exe` 和 `解锁MC下载限制.exe.sha256`。
 
-默认分支的推送中，若 `Cargo.toml` 的 `[package].version` 相比推送前发生变化，工作流会自动创建 `v版本号` 标签和 GitHub Release，并附上 EXE 和 SHA-256 校验文件；发布前会再次验证校验值，同一版本已有 Release 时跳过发布。首次推送也会发布当前版本，其他分支、Pull Request 和手动运行仅构建。
+默认分支的推送中，若 `Cargo.toml` 的 `[package].version` 相比推送前发生变化，工作流会自动创建 `v版本号` 标签和 GitHub Release，并附上 EXE 和 SHA-256 校验文件；发布前会再次验证校验值，同一版本已有 Release 时跳过发布。首次推送也会发布当前版本，其他分支、Pull Request 和默认的手动运行仅构建。
+
+若发布失败后修复了构建，可在 Actions 中手动运行默认分支的工作流，勾选 `publish_release`，补发当前版本，无需再次修改版本号。
 
 发布新版本时，同时更新 `Cargo.toml` 和 `Cargo.lock` 中本项目的版本号（可在修改 `Cargo.toml` 后运行 `cargo check` 自动同步锁文件），再提交并推送到默认分支即可，无需手动创建标签或配置额外密钥。
 

@@ -5,6 +5,11 @@ on:
     branches: ['**']
   pull_request:
   workflow_dispatch:
+    inputs:
+      publish_release:
+        description: Publish the current version if its Release does not exist
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -39,7 +44,8 @@ jobs:
 
           version = tomllib.loads(Path("Cargo.toml").read_text(encoding="utf-8"))["package"]["version"]
           event = json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text(encoding="utf-8"))
-          release = False
+          release = (os.environ["GITHUB_EVENT_NAME"] == "workflow_dispatch"
+                     and event.get("inputs", {}).get("publish_release") == "true")
           if (os.environ["GITHUB_EVENT_NAME"] == "push"
                   and os.environ["GITHUB_REF"] == f"refs/heads/{event['repository']['default_branch']}"):
               before = event["before"]
@@ -111,7 +117,7 @@ jobs:
   release:
     needs: build
     if: >-
-      github.event_name == 'push' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
       github.ref == format('refs/heads/{0}', github.event.repository.default_branch) &&
       needs.build.outputs.release == 'true'
     runs-on: ubuntu-24.04
