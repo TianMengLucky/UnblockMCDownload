@@ -362,7 +362,7 @@ fn blurred_wallpaper() -> Arc<RenderImage> {
         .thumbnail(400, 250)
         .fast_blur(6.)
         .to_rgba8();
-    for pixel in pixels.chunks_exact_mut(4) {
+    for pixel in pixels.as_chunks_mut::<4>().0 {
         pixel.swap(0, 2);
     }
     Arc::new(RenderImage::new(vec![image::Frame::new(pixels)]))
