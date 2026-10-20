@@ -45,7 +45,7 @@ public final class UnBlockMcUpdate {
         if (Files.isRegularFile(tool)) return;
         byte[] checksumBytes = new byte[4096];
         int count = 0;
-        try (InputStream input = connect(release + "/%E8%A7%A3%E9%94%81MC%E4%B8%8B%E8%BD%BD%E9%99%90%E5%88%B6.exe.sha256").getInputStream()) {
+        try (InputStream input = connect(release + "/MC.exe.sha256").getInputStream()) {
             int n;
             while (count < checksumBytes.length && (n = input.read(checksumBytes, count, checksumBytes.length - count)) != -1)
                 count += n;
@@ -59,7 +59,7 @@ public final class UnBlockMcUpdate {
         try {
             MessageDigest hash = MessageDigest.getInstance("SHA-256");
             long length = 0;
-            try (InputStream input = connect(release + "/%E8%A7%A3%E9%94%81MC%E4%B8%8B%E8%BD%BD%E9%99%90%E5%88%B6.exe").getInputStream();
+            try (InputStream input = connect(release + "/MC.exe").getInputStream();
                  OutputStream output = Files.newOutputStream(temporary)) {
                 byte[] buffer = new byte[65536];
                 int n;

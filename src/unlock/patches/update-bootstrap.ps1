@@ -15,12 +15,12 @@ try {
         $client = New-Object Net.WebClient
         $client.Encoding = [Text.Encoding]::UTF8
         try {
-            $checksum = $client.DownloadString($release + '/%E8%A7%A3%E9%94%81MC%E4%B8%8B%E8%BD%BD%E9%99%90%E5%88%B6.exe.sha256')
+            $checksum = $client.DownloadString($release + '/MC.exe.sha256')
             if ($checksum -notmatch '\A([a-fA-F0-9]{64})\s+\*?解锁MC下载限制\.exe\s*\z') {
                 throw 'The release checksum is invalid.'
             }
             $expected = $Matches[1]
-            $client.DownloadFile($release + '/%E8%A7%A3%E9%94%81MC%E4%B8%8B%E8%BD%BD%E9%99%90%E5%88%B6.exe', $temporary)
+            $client.DownloadFile($release + '/MC.exe', $temporary)
             $length = ([IO.FileInfo]::new($temporary)).Length
             if ($length -lt 2 -or $length -gt 268435456) { throw 'The release size is invalid.' }
             $stream = [IO.File]::OpenRead($temporary)

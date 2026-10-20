@@ -48,7 +48,7 @@
 
 ### 启动工具
 
-从 [Releases](https://github.com/TianMengLucky/UnblockMCDownload/releases) 下载并双击 `解锁MC下载限制.exe`，或在仓库目录运行：
+从 [Releases](https://github.com/TianMengLucky/UnblockMCDownload/releases) 下载 `UnblockMCDownload.zip`，解压后双击 `解锁MC下载限制.exe`，或在仓库目录运行：
 
 ```powershell
 cargo run --locked
@@ -60,7 +60,7 @@ cargo run --locked
 
 ### 校验下载文件
 
-从同一 Release 下载 `解锁MC下载限制.exe` 和 `解锁MC下载限制.exe.sha256`，在下载目录打开 PowerShell，运行：
+从 Release 下载 `UnblockMCDownload.zip`，解压得到 `解锁MC下载限制.exe` 和 `解锁MC下载限制.exe.sha256`，在解压目录打开 PowerShell，运行：
 
 ```powershell
 $expected = (Get-Content .\解锁MC下载限制.exe.sha256).Split(' ')[0]
@@ -86,7 +86,7 @@ $expected = (Get-Content .\解锁MC下载限制.exe.sha256).Split(' ')[0]
 
 打开此选项后，程序会修改启动器的更新安装入口。启动器下载新文件后，通过命令行调用当前的 `解锁MC下载限制.exe`，先解锁新文件并接入下一次更新，再继续安装。不会创建额外的助手程序；工具仅在更新时启动，退出界面后仍然有效。
 
-启动器会记录本工具的完整路径。如果工具文件不存在，会从本项目 GitHub 最新 Release 下载 `解锁MC下载限制.exe` 及其 `.sha256` 校验文件，校验通过后保存到原记录路径并调用。Release 必须包含这两个附件；网络、写入权限、校验或修改失败时，都会停止本次更新安装。下载回退使用启动器内嵌的代码，PCL / PCL-CE 使用系统 Windows PowerShell，不另存脚本文件。
+启动器会记录本工具的完整路径。如果工具文件不存在，会从本项目 GitHub 最新 Release 下载 `MC.exe` 及其 `.sha256` 校验文件，校验通过后保存到原记录路径并调用。Release 必须包含这两个附件；网络、写入权限、校验或修改失败时，都会停止本次更新安装。下载回退使用启动器内嵌的代码，PCL / PCL-CE 使用系统 Windows PowerShell，不另存脚本文件。
 
 HMCL 在修改下载文件前仍执行原有签名校验。工具处理失败的错误记录在启动器旁的 `UnBlockMC.Update.log`；PCL / PCL-CE 回退下载失败记录在工具原路径旁的 `.update.log`。此功能沿用下方支持范围，**不保证兼容尚未适配的未来版本**，尤其是严格匹配文件哈希的 PCL。
 
@@ -165,7 +165,9 @@ Cargo 原始构建产物为 `target/release/unblockmcdownload.exe`，发布时�
 
 [GitHub Actions](https://github.com/TianMengLucky/UnblockMCDownload/actions/workflows/build.yml) 会在分支推送、Pull Request 和手动触发时执行格式检查、Clippy、测试及 Windows x64 发布构建。构建成功后，可在对应运行的 Artifacts 中直接下载 `解锁MC下载限制.exe` 和 `解锁MC下载限制.exe.sha256`。
 
-默认分支的推送中，若 `Cargo.toml` 的 `[package].version` 相比推送前发生变化，工作流会自动创建 `v版本号` 标签和 GitHub Release，并附上 EXE 和 SHA-256 校验文件；发布前会再次验证校验值，同一版本已有 Release 时跳过发布。首次推送也会发布当前版本，其他分支、Pull Request 和默认的手动运行仅构建。
+默认分支的推送中，若 `Cargo.toml` 的 `[package].version` 相比推送前发生变化，工作流会自动创建 `v版本号` 标签和 GitHub Release，并附上 EXE 和 SHA-256 校验文件；发布前会再次验证校验值，同一版本已有 Release 时更新附件。首次推送也会发布当前版本，其他分支、Pull Request 和默认的手动运行仅构建。
+
+GitHub Release 会将直接上传的中文文件名规范化为 `MC.exe`；`UnblockMCDownload.zip` 内保留完整中文 EXE 和校验文件名。自动更新使用直接附件，校验文件中的名称对应 ZIP 内的中文文件名。
 
 若发布失败后修复了构建，可在 Actions 中手动运行默认分支的工作流，勾选 `publish_release`，补发当前版本，无需再次修改版本号。
 

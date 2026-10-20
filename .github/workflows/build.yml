@@ -138,6 +138,13 @@ jobs:
         working-directory: dist
         run: sha256sum --check 解锁MC下载限制.exe.sha256
 
+      - name: Package Chinese filenames
+        working-directory: dist
+        run: |
+          zip UnblockMCDownload.zip 解锁MC下载限制.exe 解锁MC下载限制.exe.sha256
+          cp 解锁MC下载限制.exe MC.exe
+          cp 解锁MC下载限制.exe.sha256 MC.exe.sha256
+
       - name: Publish version release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -146,7 +153,7 @@ jobs:
         run: |
           tag="v$VERSION"
           if gh release view "$tag" >/dev/null 2>&1; then
-            echo "Release $tag already exists; skipping publication."
+            gh release upload "$tag" dist/MC.exe dist/MC.exe.sha256 dist/UnblockMCDownload.zip --clobber
             exit 0
           fi
-          gh release create "$tag" dist/解锁MC下载限制.exe dist/解锁MC下载限制.exe.sha256 --target "$GITHUB_SHA" --title "$tag" --generate-notes
+          gh release create "$tag" dist/MC.exe dist/MC.exe.sha256 dist/UnblockMCDownload.zip --target "$GITHUB_SHA" --title "$tag" --generate-notes
