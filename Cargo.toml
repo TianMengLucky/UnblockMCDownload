@@ -1,0 +1,24 @@
+[package]
+name = "unblockmc"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.95"
+description = "GPUI desktop foundation for Java and .NET binary editing"
+license = "AGPL-3.0-only"
+repository = "https://github.com/TianMengLucky/UnBlockMC"
+
+[dependencies]
+ristretto_classfile = "0.31"
+zip = { version = "9.0.5", default-features = false, features = ["deflate-flate2-zlib-rs"] }
+dotscope = { version = "0.9.1", default-features = false }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+gpui = { version = "0.2.2", default-features = false, features = ["windows-manifest"] }
+
+[target.'cfg(not(target_os = "windows"))'.dependencies]
+gpui = "0.2.2"
+
+[profile.dev]
+debug = 0
+codegen-units = 256
+incremental = true
