@@ -1,0 +1,146 @@
+name: Build and release Windows EXE
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-2025
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      release: ${{ steps.version.outputs.release }}
+    env:
+      CARGO_TERM_COLOR: always
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Read version and detect a release
+        id: version
+        shell: python {0}
+        run: |
+          import json
+          import os
+          from pathlib import Path
+          import subprocess
+          import tomllib
+
+          version = tomllib.loads(Path("Cargo.toml").read_text(encoding="utf-8"))["package"]["version"]
+          event = json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text(encoding="utf-8"))
+          release = False
+          if (os.environ["GITHUB_EVENT_NAME"] == "push"
+                  and os.environ["GITHUB_REF"] == f"refs/heads/{event['repository']['default_branch']}"):
+              before = event["before"]
+              previous = None
+              if before != "0" * 40:
+                  manifest = subprocess.check_output(["git", "show", f"{before}:Cargo.toml"], text=True)
+                  previous = tomllib.loads(manifest)["package"]["version"]
+              release = version != previous
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              output.write(f"version={version}\nrelease={str(release).lower()}\n")
+
+      - name: Install Rust
+        run: rustup toolchain install stable --profile minimal --component rustfmt --component clippy
+
+      - name: Configure the Windows linker
+        id: toolchain
+        run: |
+          $sysroot = rustc +stable --print sysroot
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          "CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER=$sysroot/lib/rustlib/x86_64-pc-windows-msvc/bin/rust-lld.exe" >> $env:GITHUB_ENV
+          "version=$(rustc +stable -V)" >> $env:GITHUB_OUTPUT
+
+      - name: Cache Rust dependencies and compiled artifacts
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/registry/src
+            ~/.cargo/git/db
+            target/debug
+            target/release
+            !target/debug/incremental
+          key: ${{ runner.os }}-${{ runner.arch }}-cargo-${{ steps.toolchain.outputs.version }}-${{ hashFiles('Cargo.lock', 'Cargo.toml', '.cargo/config.toml') }}
+
+      - name: Check formatting
+        run: cargo +stable fmt --all --check
+
+      - name: Run Clippy
+        run: cargo +stable clippy --locked --all-targets --all-features -- -D warnings
+
+      - name: Run tests
+        run: cargo +stable test --locked --all-targets --all-features
+
+      - name: Build release EXE
+        run: cargo +stable build --release --locked --bin unblockmcdownload
+
+      - name: Generate SHA-256 checksum
+        run: |
+          Copy-Item -LiteralPath 'target/release/unblockmcdownload.exe' -Destination 'target/release/解锁MC下载限制.exe'
+          $exe = 'target/release/解锁MC下载限制.exe'
+          $hash = (Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash.ToLowerInvariant()
+          Set-Content -LiteralPath "$exe.sha256" -Value "$hash *解锁MC下载限制.exe`n" -Encoding utf8 -NoNewline
+
+      - name: Upload EXE
+        uses: actions/upload-artifact@v7
+        with:
+          path: target/release/解锁MC下载限制.exe
+          archive: false
+          if-no-files-found: error
+
+      - name: Upload checksum
+        uses: actions/upload-artifact@v7
+        with:
+          path: target/release/解锁MC下载限制.exe.sha256
+          archive: false
+          if-no-files-found: error
+
+  release:
+    needs: build
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == format('refs/heads/{0}', github.event.repository.default_branch) &&
+      needs.build.outputs.release == 'true'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    concurrency:
+      group: release-${{ needs.build.outputs.version }}
+      cancel-in-progress: false
+    steps:
+      - name: Download EXE and checksum
+        uses: actions/download-artifact@v8
+        with:
+          pattern: 解锁MC下载限制.exe*
+          path: dist
+          merge-multiple: true
+
+      - name: Verify checksum
+        working-directory: dist
+        run: sha256sum --check 解锁MC下载限制.exe.sha256
+
+      - name: Publish version release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          tag="v$VERSION"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release $tag already exists; skipping publication."
+            exit 0
+          fi
+          gh release create "$tag" dist/解锁MC下载限制.exe dist/解锁MC下载限制.exe.sha256 --target "$GITHUB_SHA" --title "$tag" --generate-notes

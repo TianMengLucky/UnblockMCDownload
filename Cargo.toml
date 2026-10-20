@@ -1,24 +1,47 @@
 [package]
-name = "unblockmc"
-version = "0.1.0"
+name = "unblockmcdownload"
+version = "0.0.2"
 edition = "2024"
 rust-version = "1.95"
-description = "GPUI desktop foundation for Java and .NET binary editing"
+description = "Remove download restrictions from supported PCL and HMCL launchers"
 license = "AGPL-3.0-only"
-repository = "https://github.com/TianMengLucky/UnBlockMC"
+repository = "https://github.com/TianMengLucky/UnblockMCDownload"
+
+[[bin]]
+name = "unblockmcdownload"
+path = "src/main.rs"
+required-features = ["gui"]
+
+[features]
+default = ["gui"]
+gui = ["dep:gpui", "dep:image", "dep:raw-window-handle", "dep:windows", "dep:embed-resource"]
 
 [dependencies]
 ristretto_classfile = "0.31"
 zip = { version = "9.0.5", default-features = false, features = ["deflate-flate2-zlib-rs"] }
 dotscope = { version = "0.9.1", default-features = false }
+sha2 = "0.10.9"
+base64 = "0.22"
+tempfile = "3.27"
+flate2 = { version = "1.1", default-features = false, features = ["zlib-rs"] }
+image = { version = "0.25.10", default-features = false, features = ["jpeg"], optional = true }
 
 [target.'cfg(target_os = "windows")'.dependencies]
-gpui = { version = "0.2.2", default-features = false, features = ["windows-manifest"] }
+gpui = { version = "0.2.2", default-features = false, features = ["windows-manifest"], optional = true }
+raw-window-handle = { version = "0.6.2", optional = true }
+windows = { version = "0.61.3", features = ["Win32_Foundation", "Win32_Graphics_Dwm", "Win32_UI_WindowsAndMessaging"], optional = true }
 
 [target.'cfg(not(target_os = "windows"))'.dependencies]
-gpui = "0.2.2"
+gpui = { version = "0.2.2", optional = true }
+
+[build-dependencies]
+embed-resource = { version = "3.0.12", optional = true }
 
 [profile.dev]
 debug = 0
 codegen-units = 256
 incremental = true
+
+[profile.release]
+opt-level = "s"
+strip = "symbols"
