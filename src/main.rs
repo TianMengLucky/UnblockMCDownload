@@ -27,11 +27,42 @@ struct UnblockMcDownload {
     status: String,
     busy: bool,
     modify_auto_update: bool,
+    pending_update: Option<String>,
     failed: bool,
     focus: gpui::FocusHandle,
 }
 
 impl UnblockMcDownload {
+    fn start_update_check(&mut self, cx: &mut Context<Self>) {
+        let task = cx.background_executor().spawn(async {
+            let version = unblockmcdownload::update::self_update(None)?;
+            if version.is_empty() {
+                return Ok::<_, String>(None);
+            }
+            unblockmcdownload::update::self_update(Some(&version)).map(Some)
+        });
+        cx.spawn(async move |this, cx| {
+            if let Ok(Some(path)) = task.await {
+                let _ = this.update(cx, |this, cx| {
+                    this.pending_update = Some(path);
+                    this.install_pending_update(cx);
+                });
+            }
+        })
+        .detach();
+    }
+
+    fn install_pending_update(&mut self, cx: &mut Context<Self>) {
+        if self.busy {
+            return;
+        }
+        if let Some(path) = self.pending_update.take()
+            && unblockmcdownload::update::replace_and_restart(&path).is_ok()
+        {
+            cx.quit();
+        }
+    }
+
     fn accept_consent(&mut self, cx: &mut Context<Self>) {
         if let Err(error) = self.consent.accept() {
             self.consent_error = Some(format!(
@@ -100,6 +131,7 @@ impl UnblockMcDownload {
                         this.failed = true;
                     }
                 }
+                this.install_pending_update(cx);
                 cx.notify();
             });
         })
@@ -150,6 +182,7 @@ impl UnblockMcDownload {
                         format!("解锁失败：{error}")
                     }
                 };
+                this.install_pending_update(cx);
                 cx.notify();
             });
         })
@@ -357,13 +390,15 @@ fn acrylic_backdrop(backdrop: Arc<RenderImage>) -> impl IntoElement {
 
 fn blurred_wallpaper() -> Arc<RenderImage> {
     // Half-resolution blur keeps the same screen-space radius with a quarter of the pixels.
-    let mut pixels = image::load_from_memory(WALLPAPER)
+    let wallpaper = image::load_from_memory(WALLPAPER)
         .expect("The embedded wallpaper must be a valid JPEG")
-        .thumbnail(400, 250)
-        .fast_blur(6.)
-        .to_rgba8();
-    for pixel in pixels.as_chunks_mut::<4>().0 {
-        pixel.swap(0, 2);
+        .into_rgb8();
+    let thumbnail = image::imageops::thumbnail(&wallpaper, 400, 250);
+    drop(wallpaper);
+    let blurred = image::imageops::fast_blur(&thumbnail, 6.);
+    let mut pixels = image::RgbaImage::new(blurred.width(), blurred.height());
+    for (source, target) in blurred.pixels().zip(pixels.pixels_mut()) {
+        target.0 = [source[2], source[1], source[0], 255];
     }
     Arc::new(RenderImage::new(vec![image::Frame::new(pixels)]))
 }
@@ -783,7 +818,7 @@ fn main() {
                         ImageFormat::Png,
                         include_bytes!("../assets/icon-256.png").to_vec(),
                     ));
-                    UnblockMcDownload {
+                    let mut view = UnblockMcDownload {
                         icon,
                         wallpaper: Arc::new(Image::from_bytes(
                             ImageFormat::Jpeg,
@@ -797,13 +832,34 @@ fn main() {
                         status: "选择启动器 EXE 后开始解锁。".into(),
                         busy: false,
                         modify_auto_update: false,
+                        pending_update: None,
                         failed: false,
                         focus,
-                    }
+                    };
+                    view.start_update_check(cx);
+                    view
                 })
             },
         )
         .expect("Failed to open the UnblockMCDownload window");
         cx.activate(true);
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn acrylic_blur_preserves_pixels() {
+        let mut expected = image::load_from_memory(WALLPAPER)
+            .unwrap()
+            .thumbnail(400, 250)
+            .fast_blur(6.)
+            .to_rgba8();
+        for pixel in expected.as_chunks_mut::<4>().0 {
+            pixel.swap(0, 2);
+        }
+        assert_eq!(blurred_wallpaper().as_bytes(0).unwrap(), expected.as_raw());
+    }
 }

@@ -1,4 +1,4 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 $tool = '__UNBLOCKMC_TOOL__'
 $release = '__UNBLOCKMC_RELEASE__'
 try {
@@ -15,12 +15,16 @@ try {
         $client = New-Object Net.WebClient
         $client.Encoding = [Text.Encoding]::UTF8
         try {
-            $checksum = $client.DownloadString($release + '/MC.exe.sha256')
+            $sources = @($release)
+            if ($release.StartsWith('https://github.com/')) { $sources = @(('https://gh-proxy.com/' + $release), $release) }
+            foreach ($source in $sources) {
+            try {
+            $checksum = $client.DownloadString($source + '/MC.exe.sha256')
             if ($checksum -notmatch '\A([a-fA-F0-9]{64})\s+\*?解锁MC下载限制\.exe\s*\z') {
                 throw 'The release checksum is invalid.'
             }
             $expected = $Matches[1]
-            $client.DownloadFile($release + '/MC.exe', $temporary)
+            $client.DownloadFile($source + '/MC.exe', $temporary)
             $length = ([IO.FileInfo]::new($temporary)).Length
             if ($length -lt 2 -or $length -gt 268435456) { throw 'The release size is invalid.' }
             $stream = [IO.File]::OpenRead($temporary)
@@ -31,6 +35,9 @@ try {
                 throw 'The downloaded tool failed SHA-256 verification.'
             }
             [IO.File]::Move($temporary, $tool)
+            break
+            } catch { if ($source -eq $release) { throw } }
+            }
         } finally {
             $client.Dispose()
             if ([IO.File]::Exists($temporary)) { [IO.File]::Delete($temporary) }

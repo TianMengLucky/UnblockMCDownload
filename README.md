@@ -1,66 +1,58 @@
 <div align="center">
   <img src="assets/icon.png" alt="UnblockMCDownload 项目标志" width="160" />
-  <p>GPT 娘形象参考来源：<a href="https://genderswapai.com/zh-CN/ai-gijinka/gpt">Gender Swap AI</a>（原设定作者：ZipZipPipe）</p>
   <h1>UnblockMCDownload</h1>
   <p><strong>移除 PCL / HMCL / PCL-CE 的下载地区限制</strong></p>
-  <p>选择启动器，自动识别，备份后解锁。</p>
+  <p>选择启动器 EXE → 自动识别 → 备份并解锁</p>
   <p>
+    <img src="https://img.shields.io/badge/version-0.0.3-286E5C?style=flat-square" alt="版本：0.0.3" />
     <img src="https://img.shields.io/badge/Windows-0078D4?style=flat-square" alt="平台：Windows" />
     <img src="https://img.shields.io/badge/Rust-2024-DEA584?style=flat-square" alt="Rust 2024" />
     <img src="https://img.shields.io/badge/GPUI-0.2.2-A78BFA?style=flat-square" alt="GPUI 0.2.2" />
     <a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL--3.0--only-A78BFA?style=flat-square" alt="许可证：AGPL-3.0-only" /></a>
   </p>
   <p>
-    <a href="#这是什么">这是什么</a> ·
     <a href="#快速开始">快速开始</a> ·
     <a href="#支持范围">支持范围</a> ·
+    <a href="#自动更新">自动更新</a> ·
     <a href="#常见问题">常见问题</a> ·
     <a href="#开发与验证">开发与验证</a> ·
-    <a href="#许可证">许可证</a>
+    <a href="#免责声明">免责声明</a>
   </p>
   <p>
+    <a href="https://github.com/TianMengLucky/UnblockMCDownload/releases/latest">下载最新版</a> ·
     <a href="https://github.com/TianMengLucky/UnblockMCDownload">项目仓库</a> ·
     <a href="https://github.com/TianMengLucky/UnblockMCDownload/issues">反馈问题</a>
   </p>
 </div>
 
-## 这是什么
-
-**UnblockMCDownload** 是一个面向 Windows 的桌面工具，用于修改本机上受支持的启动器 EXE，移除下载相关的地区限制。项目使用 **Codex** 辅助开发，以 **Rust** 编写，并基于 **GPUI** 构建界面。
+**UnblockMCDownload** 是面向 Windows 的桌面工具，通过修改本机上受支持的启动器 EXE，移除下载相关的地区限制。当前版本为 **0.0.3**，使用 **Rust + GPUI** 构建，由 **Codex** 辅助开发。
 
 | 功能 | 说明 |
 | --- | --- |
-| 自动识别 | 按文件内容识别 PCL、HMCL 或 PCL-CE，无需手动选择类型 |
-| 自动备份 | 修改前将原文件保存为同目录下的 `.exe.bak`，已有备份不会被覆盖 |
-| 避免重复修改 | 已解锁的文件再次处理时会直接提示，无需重新写入 |
-| 后台处理 | 在后台完成识别与修改，界面显示处理结果和备份路径 |
-
-## 界面与窗口操作
-
-![UnblockMCDownload 应用截图](assets/screenshot.png)
-
-- 操作面板采用半透明亚克力效果，带背景模糊、高光边缘和柔和阴影。
-- 拖动顶部标题区域移动窗口；右上角提供自制最小化、退出按钮。
-- Windows 下可点击“隐藏任务栏”移除本窗口的任务栏与 Alt+Tab 入口，窗口保持显示；再次点击“恢复任务栏”还原。最小化时会自动恢复任务栏入口。
-- `Ctrl+Shift+H` 切换任务栏入口；`Tab` / `Shift+Tab` 切换按钮焦点。
+| 自动识别 | 按文件内容识别 PCL、HMCL 或 PCL-CE |
+| 备份与恢复 | 修改前保存为同目录下的 `.exe.bak`，已有备份不会被覆盖 |
+| 重复处理检查 | 识别已解锁的文件，避免重复写入 |
+| 后台处理 | 后台识别与修改，界面显示结果和备份路径 |
+| 更新后继续解锁 | 可选修改启动器更新入口，在安装新版本前再次解锁 |
+| 工具自身更新 | 启动时检查新版，下载并校验后自动替换、重启 |
 
 ## 快速开始
 
-### 启动工具
+1. 从 [最新 Release](https://github.com/TianMengLucky/UnblockMCDownload/releases/latest) 下载 **`UnblockMCDownload.zip`** 并解压。
+2. 双击 **`解锁MC下载限制.exe`**，阅读免责声明并点击「同意并继续」。
+3. **完全退出目标启动器**，包括托盘进程。
+4. 点击文件选择区域，选择启动器 **EXE**；如需在启动器更新后继续解锁，开启默认关闭的「修改自动更新」。
+5. 点击 **「开始解锁」**，等待成功提示，再从原路径重新打开启动器。
 
-从 [Releases](https://github.com/TianMengLucky/UnblockMCDownload/releases) 下载 `UnblockMCDownload.zip`，解压后双击 `解锁MC下载限制.exe`，或在仓库目录运行：
+原文件备份为同目录下的 `原文件.exe.bak`。首次同意记录保存在当前用户的配置目录，免责声明变更后会再次提示。从源码运行见 [开发与验证](#开发与验证)。
 
-```powershell
-cargo run --locked
-```
+> [!IMPORTANT]
+> 已有备份不会被覆盖。处理另一份原文件前，请先将旧备份另行保存。需要恢复时，关闭启动器，用 `.exe.bak` 备份替换修改后的 EXE。
 
-首次从源码运行需准备 [构建环境](#开发与验证)。默认构建产物为 `target/debug/unblockmcdownload.exe`。
+<details>
+<summary>校验下载文件（SHA-256）</summary>
 
-首次打开界面时会显示本 README 中的免责声明，点击「同意并继续」后才能使用；选择「不同意，退出」会关闭程序。同意记录保存在当前用户的配置目录，后续启动无需重复确认；免责声明变更后会再次提示。
-
-### 校验下载文件
-
-从 Release 下载 `UnblockMCDownload.zip`，解压得到 `解锁MC下载限制.exe` 和 `解锁MC下载限制.exe.sha256`，在解压目录打开 PowerShell，运行：
+ZIP 内包含 EXE 和对应的 `.sha256` 文件。在解压目录打开 PowerShell，运行：
 
 ```powershell
 $expected = (Get-Content .\解锁MC下载限制.exe.sha256).Split(' ')[0]
@@ -69,43 +61,65 @@ $expected = (Get-Content .\解锁MC下载限制.exe.sha256).Split(' ')[0]
 
 结果应为 `True`，表示 EXE 的 SHA-256 与发布的校验值一致。
 
-### 解锁启动器
+</details>
 
-1. **完全退出目标启动器**，包括可能仍在运行的托盘进程。
-2. 点击 **「选择文件…」**，选择启动器的 EXE。界面会显示完整路径，长路径可横向滚动查看。
-3. 如需更新后继续解锁，打开按钮下方的 **「修改自动更新」**；此选项默认关闭。
-4. 点击 **「开始解锁」**，等待界面提示「下载限制已移除」。
-5. 从原路径重新打开启动器。原文件已保存为同目录下的 `原文件.exe.bak`。
+## 界面与窗口操作
 
-快捷键：<kbd>Ctrl</kbd> + <kbd>O</kbd> 选择文件，<kbd>Ctrl</kbd> + <kbd>Enter</kbd> 开始解锁。
+![UnblockMCDownload 应用截图](assets/screenshot.png)
 
-> [!IMPORTANT]
-> 已有备份不会被覆盖。处理另一份原文件前，请先将旧备份另行保存；需要撤销修改时，请关闭启动器，再用备份替换修改后的 EXE。
+界面采用半透明亚克力效果。拖动顶部标题区域移动窗口，右上角可最小化或退出；文件路径过长时可横向滚动。
 
-### 修改自动更新
+| 快捷键 | 操作 |
+| --- | --- |
+| `Ctrl+O` | 选择启动器 EXE |
+| `Ctrl+Enter` | 开始解锁 |
+| `Ctrl+Shift+H` | 隐藏或恢复任务栏与 Alt+Tab 入口 |
+| `Tab` / `Shift+Tab` | 切换按钮焦点 |
 
-打开此选项后，程序会修改启动器的更新安装入口。启动器下载新文件后，通过命令行调用当前的 `解锁MC下载限制.exe`，先解锁新文件并接入下一次更新，再继续安装。不会创建额外的助手程序；工具仅在更新时启动，退出界面后仍然有效。
+点击「隐藏任务栏」时窗口保持显示；点击「恢复任务栏」还原入口。最小化会自动恢复任务栏入口。
 
-启动器会记录本工具的完整路径。如果工具文件不存在，会从本项目 GitHub 最新 Release 下载 `MC.exe` 及其 `.sha256` 校验文件，校验通过后保存到原记录路径并调用。Release 必须包含这两个附件；网络、写入权限、校验或修改失败时，都会停止本次更新安装。下载回退使用启动器内嵌的代码，PCL / PCL-CE 使用系统 Windows PowerShell，不另存脚本文件。
+## 自动更新
 
-HMCL 在修改下载文件前仍执行原有签名校验。工具处理失败的错误记录在启动器旁的 `UnBlockMC.Update.log`；PCL / PCL-CE 回退下载失败记录在工具原路径旁的 `.update.log`。此功能沿用下方支持范围，**不保证兼容尚未适配的未来版本**，尤其是严格匹配文件哈希的 PCL。
+### 工具自身更新
 
-临时下载文件会在完成修改后原子替换，不创建 `.bak`，以便启动器下次仍可使用相同下载路径；首次解锁已安装启动器时创建的原始备份会保留。
+每次启动界面时，工具会在后台静默检查 GitHub 最新正式版。发现新版后自动下载并校验 SHA-256，等待当前解锁任务完成后退出、替换原 EXE 并重新启动。程序目录需要写入权限；检查或下载失败时继续使用当前版本。
 
-如需修改记录的工具路径，请先恢复启动器的原始备份，再使用新位置的工具重新处理。
+更新请求优先经过 `https://gh-proxy.com/`，网络或校验失败后回退 GitHub 原始地址。启动器补下载缺失工具时也使用相同策略。
 
-已使用本工具解锁的文件也可以再次开启此选项；程序会检查现有原始备份与当前文件是否匹配，并保留原备份。关闭界面上的开关只影响本次操作；撤销已写入启动器的更新接入点，需要恢复原备份。
+### 启动器更新后继续解锁
+
+「修改自动更新」默认关闭。开启后，启动器会记录本工具的完整路径，在安装新文件前调用工具解锁，并接入下一次更新；退出工具界面后仍然有效。兼容性取决于目标方法与引用结构，具体见 [支持范围](#支持范围)。
+
+| 情况 | 行为 |
+| --- | --- |
+| 工具仍在原路径 | 调用工具处理下载文件，成功后继续安装 |
+| 工具已被删除或移动 | 从本项目最新 Release 下载 `MC.exe` 和 `MC.exe.sha256`，校验后保存到记录路径并调用 |
+| 下载、校验、写入或解锁失败 | 停止本次启动器更新安装 |
+| 希望更换工具路径或撤销接入 | 恢复启动器原始备份；如需重新接入，再使用新位置的工具处理 |
+
+已解锁的文件也可再次开启此选项，程序会核对并保留匹配的原始备份。**关闭开关只影响本次操作，不会撤销已写入的更新入口。**
+
+<details>
+<summary>更新实现、备份与错误日志</summary>
+
+- 启动器通过命令行调用当前工具，不创建额外的助手程序。PCL / PCL-CE 的缺失工具下载逻辑使用系统 Windows PowerShell，不另存脚本。
+- Release 必须包含 `MC.exe` 和 `MC.exe.sha256`；HMCL 修改下载文件前仍执行原有签名校验。
+- 更新中的临时下载文件在修改后原子替换，不另建 `.bak`，以便下次复用下载路径；首次解锁已安装启动器的原始备份会保留。
+- 解锁失败记录在启动器旁的 `UnBlockMC.Update.log`；PCL / PCL-CE 补下载工具失败记录在工具原路径旁的 `.update.log`。
+- 工具自身替换或重启失败时，错误记录在工具 EXE 旁的 `.update.log`。
+
+</details>
 
 ## 支持范围
 
 | 启动器 | 支持范围 | 已有验证 |
 | --- | --- | --- |
-| **PCL** | 官方 **2.99.0.0**，严格匹配完整 SHA-256 | 官方 EXE 的备份、五个方法体和重复处理检查 |
+| **PCL** | 按五个下载方法的签名、限制代码和引用关系匹配兼容版本；2.99.0.0 保留精确补丁作为快速路径 | 官方文件、旧版已开放逻辑、版本信息与成员引用顺序变化的兼容样例、备份和重复处理检查 |
 | **HMCL** | 内含目标地区检测方法的 EXE，已验证 **3.17.0.362** | 官方 EXE 的补丁检查，其他归档条目逐项保持一致 |
 | **PCL-CE** | 含目标地区判断逻辑的 .NET 单文件包，支持普通及 Deflate 压缩的内嵌程序集 | 使用指定提交源码构建样例，验证大陆、未知、其他地区三种结果及重复处理 |
 
 > [!NOTE]
-> 无法匹配的版本、损坏文件、已签名 JAR 和核心含 ReadyToRun 本机代码的 PCL-CE 会报错并保留原文件。单文件大小上限为 **256 MiB**。尚未完成三款完整启动器的下载、安装全过程人工验证。
+> 兼容性取决于文件内容，**不保证支持所有版本或未来版本**。无法匹配的版本、损坏文件、已签名 JAR，以及需要通用补丁处理但含本机代码的 PCL、核心含 ReadyToRun 本机代码的 PCL-CE 会报错并保留原文件。单文件大小上限为 **256 MiB**。尚未完成三款完整启动器的下载、安装全过程人工验证。
 
 <details>
 <summary>查看补丁范围与对应上游提交</summary>
@@ -142,7 +156,7 @@ HMCL 在修改下载文件前仍执行原有签名校验。工具处理失败的
 <details>
 <summary>为什么启动器版本相近，仍然无法识别？</summary>
 
-补丁需要匹配文件内容，并非所有版本都支持。PCL 目前严格匹配官方 2.99.0.0 的文件哈希；HMCL 和 PCL-CE 也需要包含对应的目标方法。请先核对 [支持范围](#支持范围)，反馈时附上启动器版本和完整错误提示。
+工具不按版本号限制处理范围。PCL 会按类型、方法签名和引用关系识别已知限制逻辑，再重新映射代码中的引用；HMCL 和 PCL-CE 按目标方法识别。若上游改写方法、移除依赖或使用不支持的本机代码，仍会拒绝修改。反馈时请附上启动器版本和完整错误提示。
 
 </details>
 
@@ -153,25 +167,33 @@ HMCL 在修改下载文件前仍执行原有签名校验。工具处理失败的
 - Windows + Rust MSVC 工具链，项目声明最低 Rust 版本为 **1.95**。
 - Visual Studio C++ Build Tools 与 Windows SDK。
 
+若 Windows SDK 安装在非默认路径且 `fxc.exe` 不在 `PATH` 中，构建前将 `GPUI_FXC_PATH` 设置为实际的 `fxc.exe` 路径，供 GPUI 编译着色器使用。
+
 ```powershell
 git clone https://github.com/TianMengLucky/UnblockMCDownload.git
 cd UnblockMCDownload
+cargo run --locked
+# 构建发布版本：
 cargo build --release --locked
 ```
 
-Cargo 原始构建产物为 `target/release/unblockmcdownload.exe`，发布时重命名为 `解锁MC下载限制.exe`。
+默认启用 `gui` 功能。调试产物为 `target/debug/unblockmcdownload.exe`，发布产物为 `target/release/unblockmcdownload.exe`，发布时重命名为 `解锁MC下载限制.exe`。
 
 ### 自动构建与发布
 
 [GitHub Actions](https://github.com/TianMengLucky/UnblockMCDownload/actions/workflows/build.yml) 会在分支推送、Pull Request 和手动触发时执行格式检查、Clippy、测试及 Windows x64 发布构建。构建成功后，可在对应运行的 Artifacts 中直接下载 `解锁MC下载限制.exe` 和 `解锁MC下载限制.exe.sha256`。
 
-默认分支的推送中，若 `Cargo.toml` 的 `[package].version` 相比推送前发生变化，工作流会自动创建 `v版本号` 标签和 GitHub Release，并附上 EXE 和 SHA-256 校验文件；发布前会再次验证校验值，同一版本已有 Release 时更新附件。首次推送也会发布当前版本，其他分支、Pull Request 和默认的手动运行仅构建。
+发布新版本时，同步修改 `Cargo.toml` 和 `Cargo.lock` 中本项目的版本号，再提交并推送到默认分支。工作流检测到版本变化后，会自动创建 `v版本号` 标签和 GitHub Release，无需手动创建标签或配置额外密钥。
 
-GitHub Release 会将直接上传的中文文件名规范化为 `MC.exe`；`UnblockMCDownload.zip` 内保留完整中文 EXE 和校验文件名。自动更新使用直接附件，校验文件中的名称对应 ZIP 内的中文文件名。
+<details>
+<summary>发布附件与补发规则</summary>
 
-若发布失败后修复了构建，可在 Actions 中手动运行默认分支的工作流，勾选 `publish_release`，补发当前版本，无需再次修改版本号。
+- Release 包含 `MC.exe`、`MC.exe.sha256` 和 `UnblockMCDownload.zip`。ZIP 内保留中文文件名 `解锁MC下载限制.exe` 及其校验文件；自动更新使用直接附件。
+- 上传前会验证 SHA-256；校验文件中的名称对应 ZIP 内的中文文件名。同一版本已有 Release 时更新附件。
+- 默认分支首次推送会发布当前版本；其他分支、Pull Request 和默认的手动运行仅构建。
+- 发布失败后，可在默认分支手动运行工作流并勾选 `publish_release`，补发当前版本，无需再次修改版本号。
 
-发布新版本时，同时更新 `Cargo.toml` 和 `Cargo.lock` 中本项目的版本号（可在修改 `Cargo.toml` 后运行 `cargo check` 自动同步锁文件），再提交并推送到默认分支即可，无需手动创建标签或配置额外密钥。
+</details>
 
 ### 常规检查
 
@@ -182,7 +204,7 @@ cargo test --locked --no-default-features --lib --tests
 cargo clippy --locked --no-default-features --lib --tests -- -D warnings
 ```
 
-默认启用 `gui`，正常构建仍生成桌面应用；完整检查会覆盖 GUI 和更新子进程：
+完整检查覆盖 GUI 和启动器更新逻辑：
 
 ```powershell
 cargo fmt --check
@@ -190,12 +212,26 @@ cargo clippy --locked --all-targets --all-features -- -D warnings
 cargo test --locked --all-targets --all-features
 ```
 
-发布配置使用 `opt-level = "s"` 并去除符号，优先缩小 EXE；不启用 LTO，以控制构建耗时。
-开发配置保留增量编译。首次更改构建配置会重新编译依赖，后续构建复用缓存。
+发布配置使用 `opt-level = "s"` 并去除符号，不启用 LTO；开发配置保留增量编译，后续构建复用缓存。
+
+默认最多并行编译 4 个任务，减少大依赖同时构建时的内存压力；可用 `cargo build -j 任务数` 或 `CARGO_BUILD_JOBS` 调整。
+同一分支或 Pull Request 的新构建会取消尚未完成的旧构建，发布任务保留独立的并发控制。
+
+发布时若更重视体积，可运行 `cargo build --release --locked --config profile.release.package.unblockmcdownload.codegen-units=1`；这会增加本项目的编译耗时。
+
+大文件性能检查可单独运行，不需要 GUI 或真实启动器：
+
+```powershell
+cargo test --release --locked --no-default-features --lib benchmark_large_compressed_bundle -- --ignored --nocapture
+```
+
+该检查处理包含 16 MiB 压缩程序集的 64 MiB 单文件包，输出补丁耗时；默认测试跳过此检查。
 
 [tests/unlock.rs](tests/unlock.rs) 检查备份、文件占用、错误输入、HMCL 字节码与 EXE 前缀保留。
 
 自动更新检查还覆盖已有备份、重复接入、工具缺失时的下载与校验，以及关闭工具后连续两轮更新的样例验证。样例构建方式见 [tests/fixtures/ce](tests/fixtures/ce/README.md)，运行时将 `UNBLOCKMCDOWNLOAD_CE_UPDATE_FIXTURE` 指向构建出的 EXE。
+
+工具自身更新的代理回退、SHA-256 校验、文件替换与重启检查见 [tests/self-update.ps1](tests/self-update.ps1)。
 
 HMCL 内嵌更新桥的 Java 源码位于 [UnBlockMcUpdate.java](src/unlock/patches/UnBlockMcUpdate.java)。维护时可用 `javac --release 8 -d 临时目录 src/unlock/patches/UnBlockMcUpdate.java` 编译，将包目录中的 `.class` 更新到同目录；日常构建和运行不需要 Java 编译器。
 
@@ -216,13 +252,24 @@ cargo test --locked --test unlock -- --include-ignored --test-threads=1
 <details>
 <summary>复现 PCL 内置二进制补丁</summary>
 
-PCL 补丁严格匹配原始 EXE 的 SHA-256：
+PCL 的精确补丁快速路径匹配以下官方 EXE 的 SHA-256：
 
 ```text
 6b6e1260cb5a1d6a303855f1c60cab3d0bc1aebba7e40a964180188b271e7386
 ```
 
 [tools/build_pcl_profile.py](tools/build_pcl_profile.py) 从官方 2.14.0.0 和 2.99.0.0 EXE 提取五个下载方法，重映射元数据令牌，生成 [pcl-2.99.0.0.bin](src/unlock/patches/pcl-2.99.0.0.bin)，保留 2.99 的其他代码、资源和版本信息。
+
+通用匹配使用 [pcl-portable.json.gz](src/unlock/patches/pcl-portable.json.gz)。它记录方法签名、限制代码、可恢复代码及引用身份，不记录固定文件偏移。恢复时按目标文件重新查找引用、检查局部变量签名和异常处理表，并校验结果。只更新确认包含已知限制的下载方法；无法匹配时保留文件。
+
+维护时可用同一对官方文件复现通用模板：
+
+```powershell
+$env:UNBLOCKMC_PROFILE_DONOR = 'C:\launchers\PCL-2.14.0.0.exe'
+$env:UNBLOCKMC_PROFILE_RESTRICTED = 'C:\launchers\PCL-2.99.0.0.exe'
+$env:UNBLOCKMC_PROFILE_OUTPUT = "$PWD\src\unlock\patches\pcl-portable.json.gz"
+cargo test --locked --no-default-features --lib regenerate_portable_profile -- --ignored
+```
 
 复现方式见脚本开头。Python 和相关包仅用于维护补丁，运行 UnblockMCDownload 不需要它们。
 
@@ -240,3 +287,5 @@ PCL 补丁严格匹配原始 EXE 的 SHA-256：
 ## 许可证
 
 本项目采用 GNU Affero General Public License v3.0（`AGPL-3.0-only`）许可证，完整条款见 [LICENSE](LICENSE)。第三方依赖遵循各自的许可证。
+
+GPT 娘形象参考来源：[Gender Swap AI](https://genderswapai.com/zh-CN/ai-gijinka/gpt)（原设定作者：ZipZipPipe）。

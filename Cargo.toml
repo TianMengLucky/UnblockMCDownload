@@ -1,6 +1,6 @@
 [package]
 name = "unblockmcdownload"
-version = "0.0.2"
+version = "0.0.3"
 edition = "2024"
 rust-version = "1.95"
 description = "Remove download restrictions from supported PCL and HMCL launchers"
@@ -21,7 +21,10 @@ ristretto_classfile = "0.31"
 zip = { version = "9.0.5", default-features = false, features = ["deflate-flate2-zlib-rs"] }
 dotscope = { version = "0.9.1", default-features = false }
 sha2 = "0.10.9"
+memchr = "2.8"
 base64 = "0.22"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 tempfile = "3.27"
 flate2 = { version = "1.1", default-features = false, features = ["zlib-rs"] }
 image = { version = "0.25.10", default-features = false, features = ["jpeg"], optional = true }

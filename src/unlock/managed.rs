@@ -216,6 +216,7 @@ pub(super) fn hook_update(
     region.fill(0);
     region[..injection.len()].copy_from_slice(&injection);
     relocate_metadata(&view, &mut output, &metadata)?;
+    drop(view);
     let reloaded = CilAssemblyView::from_reader(Cursor::new(&output))?;
     if !reloaded
         .userstrings()
@@ -227,7 +228,7 @@ pub(super) fn hook_update(
     Ok(Some(output))
 }
 
-fn metadata_with_strings(
+pub(super) fn metadata_with_strings(
     view: &CilAssemblyView,
     input: &[u8],
     values: &[&str],
@@ -302,7 +303,29 @@ fn metadata_with_strings(
     Ok((output, tokens))
 }
 
-fn relocate_metadata(view: &CilAssemblyView, output: &mut Vec<u8>, metadata: &[u8]) -> Result<()> {
+pub(super) fn relocate_metadata(
+    view: &CilAssemblyView,
+    output: &mut Vec<u8>,
+    metadata: &[u8],
+) -> Result<()> {
+    let pe = read_u32(output, 0x3c)? as usize;
+    let optional = pe + 24;
+    let directory = optional
+        + match read_u16(output, optional)? {
+            0x10b => 96,
+            0x20b => 112,
+            _ => return Err("PE 格式不受支持。".into()),
+        };
+    let clr = view
+        .file()
+        .rva_to_offset(read_u32(output, directory + 14 * 8)? as usize)?;
+    let rva = append_data(output, metadata)?;
+    write_u32(output, clr + 8, rva)?;
+    write_u32(output, clr + 12, u32::try_from(metadata.len())?)?;
+    Ok(())
+}
+
+pub(super) fn append_data(output: &mut Vec<u8>, metadata: &[u8]) -> Result<u32> {
     let pe = read_u32(output, 0x3c)? as usize;
     if output.get(pe..pe + 4) != Some(b"PE\0\0") {
         return Err("PE 头无效。".into());
@@ -324,15 +347,6 @@ fn relocate_metadata(view: &CilAssemblyView, output: &mut Vec<u8>, metadata: &[u
     if !file_alignment.is_power_of_two() || !section_alignment.is_power_of_two() {
         return Err("PE 对齐参数无效。".into());
     }
-    let directory = optional
-        + match read_u16(output, optional)? {
-            0x10b => 96,
-            0x20b => 112,
-            _ => return Err("PE 格式不受支持。".into()),
-        };
-    let clr = view
-        .file()
-        .rva_to_offset(read_u32(output, directory + 14 * 8)? as usize)?;
     output.resize((output.len() + 3) & !3, 0);
     let metadata_rva = virtual_address + output.len() - raw_start;
     output.extend_from_slice(metadata);
@@ -353,9 +367,7 @@ fn relocate_metadata(view: &CilAssemblyView, output: &mut Vec<u8>, metadata: &[u
         (virtual_address + virtual_size + section_alignment - 1) & !(section_alignment - 1);
     write_u32(output, optional + 56, u32::try_from(image_size)?)?;
     write_u32(output, optional + 64, 0)?;
-    write_u32(output, clr + 8, u32::try_from(metadata_rva)?)?;
-    write_u32(output, clr + 12, u32::try_from(metadata.len())?)?;
-    Ok(())
+    Ok(u32::try_from(metadata_rva)?)
 }
 
 fn read_u16(bytes: &[u8], offset: usize) -> Result<u16> {

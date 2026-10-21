@@ -6077,7 +6077,7 @@ checksum = "0c8352f8c05e47892e7eaf13b34abd76a7f4aeaf817b716e88789381927f199c"
 
 [[package]]
 name = "unblockmcdownload"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "base64",
  "dotscope",
@@ -6085,8 +6085,11 @@ dependencies = [
  "flate2",
  "gpui",
  "image",
+ "memchr",
  "raw-window-handle",
  "ristretto_classfile",
+ "serde",
+ "serde_json",
  "sha2 0.10.9",
  "tempfile",
  "windows 0.61.3",

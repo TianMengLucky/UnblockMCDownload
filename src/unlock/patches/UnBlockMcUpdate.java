@@ -43,6 +43,14 @@ public final class UnBlockMcUpdate {
 
     private static void ensureTool(Path tool, String release) throws IOException {
         if (Files.isRegularFile(tool)) return;
+        if (release.startsWith("https://github.com/")) {
+            try { downloadTool(tool, "https://gh-proxy.com/" + release); return; }
+            catch (IOException error) { /* Retry the original after network or verification failure. */ }
+        }
+        downloadTool(tool, release);
+    }
+
+    private static void downloadTool(Path tool, String release) throws IOException {
         byte[] checksumBytes = new byte[4096];
         int count = 0;
         try (InputStream input = connect(release + "/MC.exe.sha256").getInputStream()) {
@@ -51,7 +59,7 @@ public final class UnBlockMcUpdate {
                 count += n;
             if (count == checksumBytes.length) throw new IOException("Release checksum is too large");
         }
-        Matcher checksum = Pattern.compile("\\A([a-fA-F0-9]{64})\\s+\\*?解锁MC下载限制\\.exe\\s*\\z")
+        Matcher checksum = Pattern.compile("\\A([a-fA-F0-9]{64})\\s+\\*?瑙ｉ攣MC涓嬭浇闄愬埗\\.exe\\s*\\z")
                 .matcher(new String(checksumBytes, 0, count, StandardCharsets.UTF_8));
         if (!checksum.matches()) throw new IOException("Invalid release checksum");
         Files.createDirectories(tool.getParent());

@@ -381,4 +381,87 @@ mod tests {
         ClassFile::from_bytes(&patched).unwrap().verify().unwrap();
         assert!(hook_checker(&patched).unwrap().is_none());
     }
+
+    #[test]
+    fn region_and_update_hooks_share_one_archive_and_preserve_backup() {
+        use std::io::{Cursor, Read, Write};
+        use zip::{ZipArchive, ZipWriter, write::SimpleFileOptions};
+
+        let mut region = ClassFile::from_bytes(&fixture(false)).unwrap();
+        region.this_class = region
+            .constant_pool
+            .add_class("org/jackhuang/hmcl/util/RegionUtils")
+            .unwrap();
+        region.methods.clear();
+        region.methods.push(Method {
+            access_flags: MethodAccessFlags::PRIVATE | MethodAccessFlags::STATIC,
+            name_index: region
+                .constant_pool
+                .add_utf8("checkChinaMainlandNetwork")
+                .unwrap(),
+            descriptor_index: region.constant_pool.add_utf8("()Z").unwrap(),
+            attributes: vec![Attribute::Code {
+                name_index: region.constant_pool.add_utf8("Code").unwrap(),
+                max_stack: 1,
+                max_locals: 0,
+                code: vec![Instruction::Iconst_1, Instruction::Ireturn],
+                exception_table: vec![],
+                attributes: vec![],
+            }],
+        });
+        let mut bytes = Vec::new();
+        region.to_bytes(&mut bytes).unwrap();
+        let mut prefix = vec![0x55; 128];
+        prefix[..2].copy_from_slice(b"MZ");
+        let mut cursor = Cursor::new(prefix);
+        cursor.set_position(128);
+        let mut writer = ZipWriter::new(cursor);
+        for (name, bytes) in [
+            (super::super::REGION_CLASS, bytes),
+            (HANDLER, fixture(true)),
+            (CHECKER, fixture(false)),
+            ("assets/unchanged.txt", b"unchanged resource".to_vec()),
+        ] {
+            writer
+                .start_file(name, SimpleFileOptions::default())
+                .unwrap();
+            writer.write_all(&bytes).unwrap();
+        }
+        let input = writer.finish().unwrap().into_inner();
+        for unlock_first in [false, true] {
+            let directory = tempfile::tempdir().unwrap();
+            let path = directory.path().join("launcher.exe");
+            std::fs::write(&path, &input).unwrap();
+            if unlock_first {
+                super::super::unlock(&path).unwrap();
+            }
+            let options = super::super::UnlockOptions {
+                modify_auto_update: true,
+            };
+            let outcome = super::super::unlock_with_options(&path, options).unwrap();
+            assert_eq!(std::fs::read(outcome.backup.unwrap()).unwrap(), input);
+            let patched = std::fs::read(&path).unwrap();
+            assert_eq!(&patched[..128], &input[..128]);
+            let mut archive = ZipArchive::new(Cursor::new(&patched)).unwrap();
+            for name in [super::super::REGION_CLASS, HANDLER, CHECKER, HELPER] {
+                let mut class = Vec::new();
+                archive
+                    .by_name(name)
+                    .unwrap()
+                    .read_to_end(&mut class)
+                    .unwrap();
+                ClassFile::from_bytes(&class).unwrap().verify().unwrap();
+                if name == super::super::REGION_CLASS {
+                    assert!(super::super::patch_region_class(&class).unwrap().is_none());
+                }
+            }
+            assert!(
+                super::super::unlock_with_options(&path, options)
+                    .unwrap()
+                    .backup
+                    .is_none()
+            );
+            assert_eq!(std::fs::read(&path).unwrap(), patched);
+        }
+    }
 }

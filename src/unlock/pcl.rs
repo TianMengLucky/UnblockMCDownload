@@ -2,16 +2,14 @@ use sha2::{Digest, Sha256};
 
 use super::Result;
 
-// shortcut: this exact binary profile covers official PCL 2.99.0.0 only; add a
-// separately verified profile when a later release changes the compiled methods.
+// Fast path for the known official binary; compatible builds use pcl_portable.
 const PROFILE: &[u8] = include_bytes!("patches/pcl-2.99.0.0.bin");
 
 pub(super) fn recognizes(hash: [u8; 32]) -> bool {
     hash == PROFILE[8..40] || hash == PROFILE[40..72]
 }
 
-pub(super) fn patch(input: &[u8]) -> Result<Option<Vec<u8>>> {
-    let hash = Sha256::digest(input);
+pub(super) fn patch_with_hash(input: &[u8], hash: [u8; 32]) -> Result<Option<Vec<u8>>> {
     if hash[..] == PROFILE[40..72] {
         return Ok(None);
     }
@@ -19,7 +17,8 @@ pub(super) fn patch(input: &[u8]) -> Result<Option<Vec<u8>>> {
         return Err("PCL 文件与补丁版本不匹配。".into());
     }
     let final_len = read_u32(PROFILE, 72)?;
-    let mut output = input.to_vec();
+    let mut output = Vec::with_capacity(input.len().max(final_len));
+    output.extend_from_slice(input);
     output.resize(final_len, 0);
     let mut position = 76;
     while position < PROFILE.len() {
@@ -39,6 +38,11 @@ pub(super) fn patch(input: &[u8]) -> Result<Option<Vec<u8>>> {
         return Err("PCL 修改后校验失败，原文件未修改。".into());
     }
     Ok(Some(output))
+}
+
+#[cfg(test)]
+pub(super) fn patch(input: &[u8]) -> Result<Option<Vec<u8>>> {
+    patch_with_hash(input, Sha256::digest(input).into())
 }
 
 fn read_u32(bytes: &[u8], offset: usize) -> Result<usize> {

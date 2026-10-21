@@ -70,7 +70,7 @@ impl<'a> Reader<'a> {
 }
 
 pub(super) fn bundle_marker(input: &[u8]) -> Option<usize> {
-    input.windows(MARKER.len()).position(|w| w == MARKER)
+    memchr::memmem::find(input, MARKER)
 }
 
 pub(super) fn patch_bundle(input: &[u8], marker: usize) -> Result<Option<Vec<u8>>> {
@@ -171,15 +171,30 @@ fn patch_component(
     let Some(patched) = patch(&core)? else {
         return Ok(None);
     };
-    let mut output = input.to_vec();
-    if compressed_size == 0 && patched.len() == size {
+    drop(core);
+    let in_place = compressed_size == 0 && patched.len() == size;
+    let start = if in_place {
+        offset
+    } else {
+        input.len().checked_add(4095).ok_or("PCL-CE 文件过大。")? & !4095
+    };
+    let output_len = if in_place {
+        input.len()
+    } else {
+        let length = start
+            .checked_add(patched.len())
+            .ok_or("PCL-CE 文件过大。")?;
+        if length > super::MAX_FILE_SIZE as usize {
+            return Err("PCL-CE 修改后文件超过 256 MiB。".into());
+        }
+        length
+    };
+    let mut output = Vec::with_capacity(output_len);
+    output.extend_from_slice(input);
+    if in_place {
         output[offset..end].copy_from_slice(&patched);
     } else {
         // Keep every other bundle entry at its original offset; append an uncompressed replacement.
-        let start = output.len().checked_add(4095).ok_or("PCL-CE 文件过大。")? & !4095;
-        if start + patched.len() > super::MAX_FILE_SIZE as usize {
-            return Err("PCL-CE 修改后文件超过 256 MiB。".into());
-        }
         output.resize(start, 0);
         output.extend_from_slice(&patched);
         output[entry_position..entry_position + 8].copy_from_slice(&(start as u64).to_le_bytes());
@@ -249,11 +264,130 @@ fn patch_core(input: &[u8]) -> Result<Option<Vec<u8>>> {
     if bytes.starts_with(&[0x0a, 0x16, 0x2a]) {
         return Ok(None);
     }
-    let mut output = input.to_vec();
+    let mut output = if view.file().repairs().is_empty() {
+        view.into_file()?.into_data()?
+    } else {
+        input.to_vec()
+    };
     // Tiny CIL method: ldc.i4.0; ret. Keeping its RVA preserves all call sites.
     output
         .get_mut(offset..offset + 3)
         .ok_or("PCL-CE 方法体不完整。")?
         .copy_from_slice(&[0x0a, 0x16, 0x2a]);
     Ok(Some(output))
+}
+
+#[cfg(test)]
+mod tests {
+    use std::io::Write;
+
+    use super::*;
+
+    fn bundle(core: &[u8], compressed: bool, minimum_size: usize) -> (Vec<u8>, usize, usize) {
+        let stored = if compressed {
+            let mut encoder =
+                flate2::write::DeflateEncoder::new(Vec::new(), flate2::Compression::fast());
+            encoder.write_all(core).unwrap();
+            encoder.finish().unwrap()
+        } else {
+            core.to_vec()
+        };
+        let length = (64 + stored.len()).max(minimum_size);
+        let mut input = Vec::with_capacity(length + 128);
+        input.resize(length, 0);
+        input[8..8 + MARKER.len()].copy_from_slice(MARKER);
+        input[64..64 + stored.len()].copy_from_slice(&stored);
+        let header = input.len();
+        input[..8].copy_from_slice(&(header as u64).to_le_bytes());
+        for value in [6_u32, 0, 1] {
+            input.extend_from_slice(&value.to_le_bytes());
+        }
+        input.push(12);
+        let id = input.len();
+        input.extend_from_slice(b"original-id!");
+        input.extend_from_slice(&[0; 40]);
+        let entry = input.len();
+        for value in [
+            64,
+            core.len() as u64,
+            if compressed { stored.len() as u64 } else { 0 },
+        ] {
+            input.extend_from_slice(&value.to_le_bytes());
+        }
+        input.push(1);
+        input.push(b"PCL.Core.dll".len() as u8);
+        input.extend_from_slice(b"PCL.Core.dll");
+        (input, entry, id)
+    }
+
+    #[test]
+    fn marker_search_preserves_first_match_and_boundary_behavior() {
+        for size in [0, 1, 31, 32, 33, 4096] {
+            let mut bytes = vec![0; size];
+            assert_eq!(bundle_marker(&bytes), None);
+            if size >= MARKER.len() {
+                let offset = size - MARKER.len();
+                bytes[offset..].copy_from_slice(MARKER);
+                assert_eq!(bundle_marker(&bytes), Some(offset));
+                bytes[..MARKER.len()].copy_from_slice(MARKER);
+                assert_eq!(bundle_marker(&bytes), Some(0));
+            }
+        }
+    }
+
+    #[test]
+    fn component_replacement_preserves_bundle_layout() {
+        for compressed in [false, true] {
+            for replacement in [b"patched!".as_slice(), b"a longer replacement"] {
+                let (input, entry, id) = bundle(b"original", compressed, 128);
+                let output = patch_component(&input, 8, b"PCL.Core.dll", |core| {
+                    assert_eq!(core, b"original");
+                    Ok(Some(replacement.to_vec()))
+                })
+                .unwrap()
+                .unwrap();
+                let offset =
+                    u64::from_le_bytes(output[entry..entry + 8].try_into().unwrap()) as usize;
+                assert_eq!(&output[offset..offset + replacement.len()], replacement);
+                assert_ne!(&output[id..id + 12], &input[id..id + 12]);
+                if !compressed && replacement.len() == 8 {
+                    assert_eq!(output.len(), input.len());
+                    assert_eq!(offset, 64);
+                } else {
+                    assert_eq!(offset % 4096, 0);
+                    assert!(offset >= input.len());
+                    assert_eq!(&output[64..72], &input[64..72]);
+                    assert_eq!(&output[entry + 16..entry + 24], &[0; 8]);
+                }
+                assert!(
+                    patch_component(&output, 8, b"PCL.Core.dll", |core| {
+                        assert_eq!(core, replacement);
+                        Ok(None)
+                    })
+                    .unwrap()
+                    .is_none()
+                );
+            }
+        }
+    }
+
+    #[test]
+    #[ignore = "performance: processes a 64 MiB bundle with a compressed 16 MiB assembly"]
+    fn benchmark_large_compressed_bundle() {
+        let (input, _, _) = bundle(&vec![42; 16 * 1024 * 1024], true, 64 * 1024 * 1024);
+        let start = std::time::Instant::now();
+        let output = patch_component(&input, 8, b"PCL.Core.dll", |core| {
+            let mut output = core.to_vec();
+            output[0] = 0;
+            Ok(Some(output))
+        })
+        .unwrap()
+        .unwrap();
+        assert!(output.len() > input.len());
+        eprintln!(
+            "bundle patch: {:.3} ms",
+            start.elapsed().as_secs_f64() * 1000.
+        );
+        std::hint::black_box(output);
+    }
 }
